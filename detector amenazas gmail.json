@@ -1,0 +1,538 @@
+{
+  "name": "detector amenazas gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 19
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2240,
+        320
+      ],
+      "id": "4e0ec841-d8b8-4252-babe-1cdaa7c1c003",
+      "name": "hora de activacion"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 100,
+        "simple": false,
+        "filters": {
+          "q": "is:unread newer_than:1d"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -2000,
+        320
+      ],
+      "id": "262383aa-fe0a-43b7-8846-0c1e7b931828",
+      "name": "Get many messages",
+      "webhookId": "22a5b286-b919-4517-a2b3-353e27c7507a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GjJZ7eae7ZXVhwe0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1792,
+        320
+      ],
+      "id": "845acd37-86e1-46c7-a71d-c660de25d192",
+      "name": "dividir en lotes"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1376,
+        336
+      ],
+      "id": "f36631b2-bbb6-4a98-9576-cde4d34d1b15",
+      "name": "Analizar  Enlace Individualmente"
+    },
+    {
+      "parameters": {
+        "preBuiltAgentsCalloutHttpRequest": "",
+        "httpVariantWarning": "",
+        "curlImport": "",
+        "method": "POST",
+        "": "",
+        "url": "=https://www.virustotal.com/api/v3/urls",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "virusTotalApi",
+        "provideSslCertificates": false,
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{$json.url}}"
+            }
+          ]
+        },
+        "options": {},
+        "infoMessage": ""
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1136,
+        352
+      ],
+      "id": "071c6b3d-aa50-48e7-8061-c7d1326e8c05",
+      "name": "VirusTotal HTTP Request",
+      "extendsCredential": "virusTotalApi",
+      "credentials": {
+        "virusTotalApi": {
+          "id": "2IXg3XOPVcLcTfnc",
+          "name": "VirusTotal account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "31b5e26c-0286-4699-ba28-131fa7942df8",
+              "leftValue": "={{ $json.data.attributes.stats.malicious }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -192,
+        336
+      ],
+      "id": "bafb207d-9200-4397-9998-29f5baf6ded0",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -896,
+        352
+      ],
+      "id": "cb57b503-d7f9-4c31-b479-9e3ce18bd43c",
+      "name": "Wait",
+      "webhookId": "b7528d16-915d-4c32-b7b8-8b5813912d43"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/analyses/{{ $json.data.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -432,
+        336
+      ],
+      "id": "e83a9ee6-064b-4d13-b9c7-fd6c9bad62c3",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "muze06kEs30HVfzq",
+          "name": "clave header virus total"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const bodyHtml = $json.html || '';\nconst bodyText = $json.text || '';\nconst combinedBody = bodyHtml + ' ' + bodyText;\n\nconst urlRegex = /https?:\\/\\/[^\\s\"'<>]+/g;\nconst urls = combinedBody.match(urlRegex) || [];\n\nif (urls.length > 0) {\n  return urls.map(url => ({ json: { url } }));\n}\n\nreturn [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        336
+      ],
+      "id": "d4dd08ae-f534-4dd7-a5f5-6ae14d8c2af2",
+      "name": "code"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "66bf6aff-7267-4e5e-88cc-da97e493fb0d",
+              "name": "cleanedUrl",
+              "value": "={{ $('code').item.json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -656,
+        336
+      ],
+      "id": "1561b15b-a1ce-4fac-ae27-0898918cd6f8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "sendTo": "daniellopezciber@gmail.com",
+        "subject": "Alerta de Seguridad: Enlace Peligroso Detectado",
+        "message": "=¡Alerta de Seguridad!  Se ha detectado un enlace peligroso en un correo.  - Remitente: {{$node[\"Recibir muchos mensajes\"].json.from.text}} - URL Peligrosa: {{ $('HTTP Request').item.json.meta.url_info.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        240
+      ],
+      "id": "b9dbdba2-49b8-4dca-9166-78eb916da725",
+      "name": "Send a message",
+      "webhookId": "097d5941-248c-48be-8c07-405da43f2e1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GjJZ7eae7ZXVhwe0",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Despertador Diario\n\n Este nodo inicia todo el proceso de forma automática una vez al día. Es el \"despertador\" que pone en marcha el sistema de seguridad para revisar los correos nuevos.\n\n",
+        "height": 368,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2272,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "7434b7b9-bc56-4bda-9562-eb16acb58194",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Leer Nuevos Correos\n\nSe conecta a mi cuenta de Gmail y descarga una lista de todos los correos electrónicos que han llegado en las últimas 24 horas y que aún no he leído.",
+        "height": 416,
+        "width": 160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2032,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "d30a8c8f-e26f-4e6b-97d6-a50f577ea0e3",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Procesar Correo por Correo\n\n Toma la lista completa de correos y los separa para analizarlos uno por uno. Asegura que cada correo sea inspeccionado individualmente.\n\n",
+        "height": 448,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1808,
+        32
+      ],
+      "typeVersion": 1,
+      "id": "135091f5-00d7-4ade-9f20-54bc8ef0b396",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": " Extraer Enlaces (URLs)\n\n Lee el contenido de cada correo individual y, usando un código JavaScript, encuentra y extrae todos los enlaces (URLs) que contiene.",
+        "height": 384,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1600,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "b27b007d-efd9-4b52-91a4-7a02d29c7fa3",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": " Aislar Cada Enlace\n\n Toma la lista de enlaces extraída del correo y la separa para analizar cada URL de forma individual, una por una.\n\n",
+        "height": 432,
+        "width": 150
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1392,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "7bc1c3c7-f85f-4820-b2b5-99e3b69f84e2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Enviar URL a VirusTotal\n\n Envía cada enlace a la API de VirusTotal para solicitar un nuevo análisis de seguridad. Este es el primer contacto con el sistema antivirus.",
+        "height": 432,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1184,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "8cff1ffb-5599-4e79-b696-b2d00680874c",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "Esperar Informe (30s)\n\nPausa el flujo de trabajo durante 60 segundos. Este tiempo de espera es necesario para dar margen a que VirusTotal complete el análisis de seguridad del enlace.",
+        "height": 384,
+        "width": 182
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -944,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "6010e742-e96d-472f-beed-5f952e8e6f5c",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "Guardar Datos Clave\n\n Guarda la URL original y la respuesta inicial de VirusTotal (el ID del análisis). Este paso es crucial para no perder la información necesaria para los siguientes nodos.",
+        "height": 384,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "daa7e70d-dd01-428b-8834-b297556f8f00",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "Obtener Informe Final\n\nUsa la ID del análisis guardada anteriormente para solicitar a VirusTotal el informe de seguridad final y completo de la URL.\n\n",
+        "height": 416,
+        "width": 160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -464,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "e4e6d999-bcac-41db-952b-310a24954924",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "¿Es Peligroso?\n\nActúa como el juez. Revisa el informe final y comprueba si el número de detecciones maliciosas es mayor que cero. Solo deja pasar los enlaces que son considerados una amenaza.",
+        "height": 400,
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "68e1e922-ec7c-42f4-a374-c68ad830334a",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "¡Enviar Alerta de Seguridad!\n\n\n Si el nodo anterior detecta una amenaza, este nodo se activa y me envía un correo electrónico de alerta inmediata, informándome sobre el enlace peligroso que ha sido encontrado.",
+        "height": 496,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "cc286e62-d3e4-4cd6-8e3c-12347311e649",
+      "name": "Sticky Note10"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "hora de activacion": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "dividir en lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dividir en lotes": {
+      "main": [
+        [],
+        [
+          {
+            "node": "code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar  Enlace Individualmente": {
+      "main": [
+        [],
+        [
+          {
+            "node": "VirusTotal HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VirusTotal HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code": {
+      "main": [
+        [
+          {
+            "node": "Analizar  Enlace Individualmente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "09418acf-0351-48bf-a549-c73c9007f855",
+  "meta": {
+    "instanceId": "b63a78f12a7a12aeeb89bf175063fd39e6f5010295989a9b052f2212a77127bc"
+  },
+  "id": "5oW1yr9R9s4vJXbr",
+  "tags": []
+}
