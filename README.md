@@ -41,23 +41,15 @@ Este proyecto es un **flujo automatizado en n8n** que analiza correos electróni
 
 ## ⚙️ Configuración
 
-1. Clona este repositorio:
+1. Importa el archivo `detector amenazas gmail.json` en tu instancia de n8n.
 
-   ```bash
-   git clone https://github.com/daniellopezciber/n8n-virustotal-email-guard.git
-   cd n8n-virustotal-email-guard
-   ```
-
-2. Importa el archivo `workflow.json` en tu instancia de n8n.
-
-3. Configura las credenciales:
+2. Configura las credenciales:
 
    * **Gmail API** (o tu servicio de correo).
    * **VirusTotal API Key**.
 
-4. Ajusta los parámetros de búsqueda (ej: últimos 24h, correos no leídos).
-
-5. Activa el flujo y revisa las ejecuciones.
+3. Ajusta los parámetros de búsqueda (ej: últimos 24h, correos no leídos).
+4. Activa el flujo y revisa las ejecuciones.
 
 ---
 
